@@ -18,7 +18,7 @@ instance Foldable Postorder where
 
 instance Foldable Levelorder where
     foldr f ini (LevelO Nil) = ini
-    foldr f ini (LevelO tree) = levelOrderTravers [tree] f ini
+    foldr f ini (LevelO tree) = foldr f ini (levelOrderTravers [tree] [])
 
 getValue :: Tree a -> [a]
 getValue Nil = []
@@ -34,12 +34,12 @@ getRight Nil = []
 getRight (Branch l v Nil) = []
 getRight (Branch l v r) = [r]
 
-levelOrderTravers :: [Tree a] -> (a -> b -> b) -> b -> b
-levelOrderTravers [] f acc = acc
-levelOrderTravers trees f acc = levelOrderTravers nextTrees f nextAcc
+levelOrderTravers :: [Tree a] -> [a] -> [a]
+levelOrderTravers [] acc = acc
+levelOrderTravers trees acc = levelOrderTravers nextTrees nextAcc
     where
         nextTrees = concatMap (\tree -> getLeft tree ++ getRight tree) trees
-        nextAcc = foldl f acc (concatMap getValue trees)
+        nextAcc = acc ++ (concatMap getValue trees)
         
 
 tree = Branch (Branch Nil 1 (Branch Nil 2 Nil)) 3 (Branch Nil 4 Nil)
