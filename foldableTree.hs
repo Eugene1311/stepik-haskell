@@ -43,3 +43,11 @@ levelOrderTravers trees acc = levelOrderTravers nextTrees nextAcc
         
 
 tree = Branch (Branch Nil 1 (Branch Nil 2 Nil)) 3 (Branch Nil 4 Nil)
+
+instance Functor Tree where
+    fmap _ Nil = Nil
+    fmap f (Branch left x right) = Branch (fmap f left) (f x) (fmap f right)
+
+instance Traversable Tree where
+    traverse _ Nil = pure Nil
+    traverse f (Branch left x right) = Branch <$> (traverse f left) <*> f x <*> (traverse f right)
