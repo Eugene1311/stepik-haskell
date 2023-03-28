@@ -1,4 +1,4 @@
-data Triple a = Tr a a a  deriving (Eq,Show)
+data Triple a = Tr a a a deriving (Eq,Show)
 
 instance Functor Triple where
     fmap g (Tr x y z) = Tr (g x) (g y) (g z)
