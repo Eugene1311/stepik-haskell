@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeOperators #-}
 
 infixr 9 |.|
-newtype (|.|) f g a = Cmps { getCmps :: f (g a) }  deriving (Eq,Show) 
+newtype (|.|) f g a = Cmps { getCmps :: f (g a) } deriving (Eq,Show) 
 
 instance (Foldable f, Foldable g) => Foldable ((|.|) f g) where
     foldMap func (Cmps cmps) = foldMap (\f -> foldMap (\g -> func(g)) f) cmps
