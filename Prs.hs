@@ -1,3 +1,5 @@
+import Control.Applicative
+
 newtype Prs a = Prs { runPrs :: String -> Maybe (a, String) }
 
 instance Functor Prs where
@@ -22,6 +24,15 @@ instance Applicative Prs where
         (a, str2) <- runPrs parser2 str1;
         return (g a, str2)}
 
--- instance Alternative Prs where
---   empty = pure
---   parser1 <|> parser2 = undefined
+instance Alternative Prs where
+  empty = Prs (\_ -> Nothing)
+  parser1 <|> parser2 = Prs func where
+    func str = (runPrs parser1 str) <|> (runPrs parser2 str)
+
+many1 :: Prs a -> Prs [a]
+many1 parser = pure (:) <*> parser <*> (many1 parser <|> pure [])
+
+char :: Char -> Prs Char
+char a = Prs f where
+    f "" = Nothing
+    f (x:xs) = if (x == a) then Just (x, xs) else Nothing
