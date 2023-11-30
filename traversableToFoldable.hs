@@ -18,12 +18,13 @@ instance Functor Tree where
 instance Foldable Tree where
   foldMap = foldMapDefault
 
--- instance Traversable Tree where
---   sequenceA = undefined
-
 instance Traversable Tree where
-    traverse _ Nil = pure Nil
-    traverse f (Branch left x right) = flip <$> Branch <$> (traverse f left) <*> (traverse f right) <*> f x
+  sequenceA Nil = pure Nil
+  sequenceA (Branch left x right) = flip <$> Branch <$> (sequenceA left) <*> (sequenceA right) <*> x
+
+-- instance Traversable Tree where
+--     traverse _ Nil = pure Nil
+--     traverse f (Branch left x right) = flip <$> Branch <$> (traverse f left) <*> (traverse f right) <*> f x
 
 testTree = Branch (Branch (Branch Nil 1 Nil) 2 (Branch Nil 3 Nil)) 4 (Branch Nil 5 Nil)
 
