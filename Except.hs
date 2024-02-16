@@ -14,9 +14,12 @@ infixl 9 !!!
 data ReadError = EmptyInput | NoParse String
   deriving Show
 
--- tryRead :: Read a => String -> Except ReadError a
--- tryRead str = except (read str :: a)
--- tryRead str = (read str) `catchE` handler
---   where handler _ = except $ Left (NoParse str)
+tryRead :: Read a => String -> Except ReadError a
+tryRead str | null str = throwE EmptyInput
+            | null result = throwE (NoParse str)
+            | (not . null) $ snd (result !! 0) = throwE (NoParse str)
+            | otherwise = return $ fst (result !! 0)
+                where result = reads str
 
--- read' :: Read a => String -> Int
+tryIncrementEven :: Int -> Except String Int
+tryIncrementEven x = if even x then return (x + 1) else throwE "Number is odd"
