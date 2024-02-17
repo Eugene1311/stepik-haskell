@@ -23,3 +23,14 @@ tryRead str | null str = throwE EmptyInput
 
 tryIncrementEven :: Int -> Except String Int
 tryIncrementEven x = if even x then return (x + 1) else throwE "Number is odd"
+
+data SumError = SumError Int ReadError
+  deriving Show
+
+trySum :: [String] -> Except ReadError Integer
+trySum strings = except $ foldl foldFunc (Right 0) results
+  where results = fmap (runExcept . tryRead) strings -- [Either ReadError Integer]
+        resultsWithPositions = zip [1..] results
+        foldFunc = \a -> \b -> ((Right (+)) <*> a <*> b)
+
+-- withExcept :: (e -> e') -> Except e a -> Except e' a
