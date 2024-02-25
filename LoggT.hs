@@ -7,20 +7,20 @@ data Logged a = Logged String a deriving (Eq,Show)
 newtype LoggT m a = LoggT { runLoggT :: m (Logged a) }
 
 instance Functor f => Functor (LoggT f) where
-  fmap :: (a -> b) -> LoggT f a -> LoggT f b
+  -- fmap :: (a -> b) -> LoggT f a -> LoggT f b
   fmap func loggT = LoggT (fmap updater (runLoggT loggT))
     where updater (Logged str x) = Logged str (func x)
 
 instance Applicative app => Applicative (LoggT app) where
   pure x = LoggT $ pure (Logged "" x)
-  (<*>) :: Applicative app => LoggT app (a -> b) -> LoggT app a -> LoggT app b
+  -- (<*>) :: Applicative app => LoggT app (a -> b) -> LoggT app a -> LoggT app b
   loggT1 <*> loggT2  = LoggT $
     liftA2 updater (runLoggT loggT1) (runLoggT loggT2)
       where updater ~(Logged a f) ~(Logged b x) = Logged (a `mappend` b) (f x)
 
 instance Monad m => Monad (LoggT m) where
   return = pure
-  (>>=) :: Monad m => LoggT m a -> (a -> LoggT m b) -> LoggT m b
+  -- (>>=) :: Monad m => LoggT m a -> (a -> LoggT m b) -> LoggT m b
   loggT >>= k = LoggT $ do
     (Logged str1 x) <- (runLoggT loggT)
     (Logged str2 y) <- runLoggT (k x)
@@ -50,3 +50,21 @@ failTst xs = do
 -- [Logged "A" 42]
 -- runLoggT $ failTst [7,6]
 -- []
+
+write2log :: Monad m => String -> LoggT m ()
+write2log str = do
+  LoggT $ return $ Logged str ()
+
+type Logg = LoggT Identity
+
+runLogg :: Logg a -> Logged a
+runLogg = runIdentity . runLoggT 
+
+logTst' :: Logg Integer   
+logTst' = do 
+  write2log "AAA"
+  write2log "BBB"
+  return 42
+
+-- GHCi> runLogg logTst'
+-- Logged "AAABBB" 42
