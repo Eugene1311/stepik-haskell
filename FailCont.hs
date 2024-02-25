@@ -26,7 +26,7 @@ evalFailCont :: FailCont (Either e a) e a -> Either e a
 evalFailCont failCont = runFailCont failCont Right Left
 
 callCFC :: ((a -> FailCont r e b) -> FailCont r e a) -> FailCont r e a
-callCFC = undefined
+callCFC f = FailCont $ \ok notOk -> runFailCont (f (\a -> FailCont $ \ _ _ -> ok a)) ok notOk
 
 add :: Int -> Int -> FailCont r e Int
 add x y = FailCont $ \ok _ -> ok $ x + y
@@ -62,6 +62,14 @@ tryRead str | null str = throwE EmptyInput
 
 -- callCC :: ((a -> Cont r b) -> Cont r a) -> Cont r a
 -- callCC f = cont $ \h -> runCont (f (\a -> cont $ \_ -> h a)) h
--- f :: a -> Cont r b
+-- f :: (a -> Cont r b) -> Cont r a
 -- cont :: ((a -> r) -> r) -> Cont r a
 -- h :: a -> r
+-- \_ -> h a :: _ -> r
+-- cont $ \_ -> h a :: Cont r _
+-- \a -> cont $ \_ -> h a :: a -> Cont r _ || a -> Cont r a ??
+-- 
+
+-- callCFC :: ((a -> FailCont r e b) -> FailCont r e a) -> FailCont r e a
+-- callCC f = cont $ \h -> runCont (f (\a -> cont $ \_ -> h a)) h
+-- callCFC f = FailCont $ \ok notOk -> runFailCont (f (\a -> FailCont $ \ _ _ -> ok a)) ok notOk
