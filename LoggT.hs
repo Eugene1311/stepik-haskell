@@ -1,5 +1,12 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 import Control.Applicative
 import Control.Monad.Identity
+import Data.Functor.Identity
+import Control.Monad.State
+import Control.Monad.Trans
 
 data Logged a = Logged String a deriving (Eq,Show)
 
@@ -68,3 +75,24 @@ logTst' = do
 
 -- GHCi> runLogg logTst'
 -- Logged "AAABBB" 42
+
+instance MonadTrans LoggT where
+  lift m = LoggT $ fmap (Logged "") m
+
+instance MonadState s m => MonadState s (LoggT m) where
+  get   = lift get
+  put   = lift . put
+  -- state :: MonadState s m => (s -> (a, s)) -> LoggT m a - (m (Logged a))
+  -- state = \func -> LoggT $ fmap (Logged "") (state func)
+  state = lift . state
+
+logSt' :: LoggT (State Integer) Integer
+logSt' = do
+  modify (+1)                   -- no lift!
+  a <- get                      -- no lift!
+  write2log $ show $ a * 10
+  put 42                        -- no lift!
+  return $ a * 100
+
+-- GHCi> runState (runLoggT logSt') 2
+-- (Logged "30" 300,42)
