@@ -6,7 +6,7 @@ import Data.Foldable
 run1 x s = runState (runExceptT x) s
 run2 x s = runExcept $ runStateT x s
 
-limited :: (MonadState s f, MonadError e f, Num e, Enum e) => (s -> Bool) -> [State s a] -> f [b]
+limited :: (MonadState s f, MonadError e f, Num e, Enum e) => (s -> Bool) -> [State s a] -> f [a]
 limited p fs = traverse limit1 (zip [0..] fs)
   where
     limit1 (i, f) = do
