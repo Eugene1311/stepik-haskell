@@ -1,6 +1,9 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 import Control.Monad.Trans.Reader
 import Control.Monad
 import Control.Monad.Trans.Class
+import Control.Monad.Writer
 
 newtype StateT s m a = StateT { runStateT :: s -> m (a,s) }
 
@@ -48,3 +51,9 @@ instance MonadFail m => MonadFail (StateT s m) where
 -- GHCi> sm = StateT $ \st -> Just (st+1,st-1)
 -- GHCi> runStateT (do {42 <- sm; return ()}) 5
 -- Nothing
+
+instance MonadWriter w m => MonadWriter w (StateT s m) where
+  writer = lift . writer
+  tell = lift . tell
+  -- listen stateT = StateT $ \s -> lift $ listen (runStateT stateT s)
+  -- pass stateT = StateT $ \s -> lift $ pass (runStateT stateT s)

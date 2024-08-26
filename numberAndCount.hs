@@ -3,6 +3,10 @@ import Control.Monad.Trans.Writer
 import Control.Monad.Trans (lift)
 import Data.Monoid
 
+import Debug.Trace
+
+debug = flip trace
+
 data Tree a = Leaf a | Fork (Tree a) a (Tree a)
   deriving Show
 
@@ -44,8 +48,15 @@ tree = Fork (Fork (Leaf ()) () (Leaf ())) () (Leaf ())
 --       l' <- go l
 --       -- запоминаем значение для вершины
 --       n <- get
---       modify (+ 1)
+--       modify (+ 1) `debug` ("l': " ++ show l' ++ " ;")
 --       -- поскольку вершина это не лист, счётчик листов в логе не увеличиваем
 --       -- обходим правое поддерево
 --       r' <- go r
 --       return $ Fork l' n r'
+
+testState :: State Integer Integer
+testState = do
+  x <- get
+  modify (+1)
+  y <- get
+  return y

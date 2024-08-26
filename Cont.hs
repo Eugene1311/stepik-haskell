@@ -30,3 +30,5 @@ thousand = multiply 1000
 
 -- decode $ one $ number
 -- \0 -> (\0 -> 1) * 1
+
+newtype Cont r a = Cont {runCont :: (r -> a) -> a}

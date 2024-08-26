@@ -7,6 +7,7 @@ import Control.Monad.Identity
 import Data.Functor.Identity
 import Control.Monad.State
 import Control.Monad.Trans
+import Control.Monad.Reader
 
 data Logged a = Logged String a deriving (Eq,Show)
 
@@ -14,7 +15,7 @@ data Logged a = Logged String a deriving (Eq,Show)
 newtype LoggT m a = LoggT { runLoggT :: m (Logged a) }
 
 instance Functor f => Functor (LoggT f) where
-  -- fmap :: (a -> b) -> LoggT f a -> LoggT f b
+  -- fmap :: (a -> b) -> LoggT m a -> LoggT m b
   fmap func loggT = LoggT (fmap updater (runLoggT loggT))
     where updater (Logged str x) = Logged str (func x)
 
@@ -79,6 +80,17 @@ logTst' = do
 instance MonadTrans LoggT where
   lift m = LoggT $ fmap (Logged "") m
 
+logSt :: LoggT (State Integer) Integer
+logSt = do 
+  lift $ modify (+1)
+  a <- lift get
+  write2log $ show $ a * 10
+  lift $ put 42
+  return $ a * 100
+
+-- GHCi> runState (runLoggT logSt) 2
+-- (Logged "30" 300,42)
+
 instance MonadState s m => MonadState s (LoggT m) where
   get   = lift get
   put   = lift . put
@@ -96,3 +108,65 @@ logSt' = do
 
 -- GHCi> runState (runLoggT logSt') 2
 -- (Logged "30" 300,42)
+
+instance MonadReader r m => MonadReader r (LoggT m) where
+  ask = lift ask
+  -- local :: MonadReader r m => (r -> r) -> m a -> m a
+  local = mapLoggT . local
+  reader = lift . reader
+
+mapLoggT :: (m (Logged a) -> n (Logged b)) -> LoggT m a -> LoggT n b
+mapLoggT f loggT = LoggT $ f (runLoggT loggT)
+
+-- logRdr :: LoggT (Reader [(Int,String)]) ()
+-- logRdr = do 
+--   Just x <- asks $ lookup 2                      -- no lift!
+--   write2log x
+--   Just y <- lift $ local ((3,"Jim"):) $ asks $ lookup 3 -- no lift!
+--   write2log y
+
+-- GHCi> runReader (runLoggT logRdr) [(1,"John"),(2,"Jane")]
+-- Logged "JaneJim" ()
+
+class Monad m => MonadLogg m where
+  w2log :: String -> m ()
+  logg :: Logged a -> m a
+
+instance Monad m => MonadLogg (LoggT m) where
+  w2log = write2log
+  logg (Logged str a) = return a
+
+logSt'' :: LoggT (State Integer) Integer
+logSt'' = do
+  x <- logg $ Logged "BEGIN " 1
+  modify (+x)
+  a <- get
+  w2log $ show $ a * 10
+  put 42
+  w2log " END"
+  return $ a * 100
+
+-- GHCi> runState (runLoggT logSt'') 2
+-- (Logged "BEGIN 30 END" 300,42)
+
+instance MonadLogg m => MonadLogg (StateT s m) where
+  w2log = lift . w2log
+  logg  = lift . logg
+
+instance MonadLogg m => MonadLogg (ReaderT r m) where
+  w2log = lift . w2log
+  logg  = lift . logg
+
+rdrStLog :: ReaderT Integer (StateT Integer Logg) Integer      
+rdrStLog = do
+  x <- logg $ Logged "BEGIN " 1
+  y <- ask
+  modify (+ (x+y))
+  a <- get
+  w2log $ show $ a * 10
+  put 42
+  w2log " END"
+  return $ a * 100
+
+-- GHCi> runLogg $ runStateT (runReaderT rdrStLog 4) 2
+-- Logged "BEGIN 70 END" (700,42)

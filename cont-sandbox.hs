@@ -13,3 +13,13 @@ foo x = callCC $ \k1 -> do
 -- instance Monad []  where
 --     {-# INLINE (>>=) #-}
 --     xs >>= f             = [y | x <- xs, y <- f x]
+
+test :: Int -> (Int -> Cont r Int) -> Cont r Int
+test x = \k -> do
+  k (x * 100)
+  return x
+
+test1 :: Int -> Cont r Int
+test1 x = callCC $ \k -> do
+  when (x > 100) $ k (x + 2)
+  return x

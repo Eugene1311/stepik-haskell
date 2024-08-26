@@ -59,3 +59,21 @@ map1 (x, y)
 --    --                            влево-вправо-вверх, вниз-вверх-вверх)
 -- GHCi> waysToDie Poisoned map1 4 (4,2)
 -- 13
+
+-- moves :: GameMap -> Int -> Point -> [Either DeathReason Point]
+-- moves m n p = runExceptT $ foldr (>=>) pure (replicate n (ExceptT . move)) p
+--   where
+--     steps :: Point -> [Point]
+--     steps (x, y) = [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+
+--     stepOn :: Point -> Either DeathReason Point
+--     stepOn p = case m p of
+--       Floor -> Right p
+--       Chasm -> Left Fallen
+--       Snake -> Left Poisoned
+
+--     move :: Point -> [Either DeathReason Point]
+--     move p = stepOn <$> steps p
+
+-- waysToDie :: DeathReason -> GameMap -> Int -> Point -> Int
+-- waysToDie r m n p = length $ filter (== Left r) $ moves m n p

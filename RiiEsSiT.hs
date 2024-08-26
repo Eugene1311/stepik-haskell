@@ -15,16 +15,9 @@ runRiiEsSiT readerT env st = runStateT (runExceptT (runReaderT readerT env)) st
 go :: Monad m => StateT Integer m Integer -> RiiEsSiT m ()
 go stateT = ReaderT $ \bounds -> do
   x <- lift $ get
-  n <- execStateT stateT x
+  n <- lift $ lift $ execStateT stateT x
   lift $ put n
-  lift $ helper bounds n
-
--- go :: Integer -> Integer -> State Integer Integer -> EsSi ()
--- go lowerBound upperBound state = ExceptT $ do
---   x <- get
---   let n = execState state x
---   put n
---   return $ (helper lowerBound upperBound n)
+  ExceptT . return $ helper bounds n
 
 helper :: (Integer, Integer) -> Integer -> Either String ()
 helper (lowerBound, upperBound) n
