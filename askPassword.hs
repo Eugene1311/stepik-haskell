@@ -26,12 +26,17 @@ getValidPassword :: PwdErrorIOMonad String
 getValidPassword = do
   s <- liftIO getLine
   validate s
-  return s
 
-validate :: String -> PwdErrorIOMonad ()
-validate s | length s < 8 = throwE $ PwdError "Incorrect input: password is too short!"
-          | not $ any isNumber s = throwE $ PwdError "Incorrect input: password must contain some digits!"
-          | not $ any isPunctuation s = throwE $ PwdError "Incorrect input: password must contain some punctuation!"
+validate :: String -> PwdErrorIOMonad String
+validate s | length s < 8 = printAndThrow "Incorrect input: password is too short!"
+           | not $ any isNumber s = printAndThrow "Incorrect input: password must contain some digits!"
+           | not $ any isPunctuation s = printAndThrow "Incorrect input: password must contain some punctuation!"
+           | otherwise = return s
+
+printAndThrow :: String -> PwdErrorIOMonad String
+printAndThrow s = do
+  liftIO $ putStrLn s
+  throwE $ PwdError s
 
 askPassword0 :: MaybeT IO ()
 askPassword0 = do
