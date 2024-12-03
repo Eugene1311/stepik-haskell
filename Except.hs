@@ -1,4 +1,5 @@
 import Control.Monad.Trans.Except
+import Control.Monad.Trans.Identity
 
 data ListIndexError = ErrIndexTooLarge Int | ErrNegativeIndex 
   deriving (Eq, Show)
@@ -36,7 +37,7 @@ trySum strings = except $ foldl foldFunc (Right 0) resultsWithSumError
                               Left ex -> Left (i ,ex)
         resultsWithSumError = fmap (runExcept . (withExcept (\(i, readErr) -> SumError i readErr)) . except) resultsWithPositions -- [Except SumError Integer]
         foldFunc = \a -> \b -> ((Right (+)) <*> a <*> b)
--- todo compare with it solution
+-- todo compare with this solution
 -- trySum xs = sum <$> traverse (\(i, s) -> withExcept (SumError i) $ tryRead s) (zip [1..] xs)
 
 newtype SimpleError = Simple { getSimple :: String } 
@@ -67,3 +68,37 @@ lie2se (ErrIndexTooLarge i) = Simple ("[index (" ++ show i ++ ") is too large]")
 -- Left (Simple {getSimple = "[negative index][index (42) is too large]"})
 -- GHCi> toSimpleFromList [xs !!! (-2), xs !!! 2]
 -- Right 3
+
+newtype Validate e a = Validate { getValidate :: Either [e] a }
+instance Functor (Validate e) where
+  fmap f (Validate (Left e)) = Validate (Left e)
+  fmap f (Validate (Right r)) = Validate (Right $ f r)
+
+instance Applicative (Validate e) where
+  pure                                      = Validate . Right
+  Validate (Left f)  <*> Validate (Left e)  = Validate (Left $ f ++ e)
+  Validate (Left f)  <*> _                  = Validate (Left f)
+  Validate (Right f) <*> Validate (Left e)  = Validate (Left e)
+  Validate (Right f) <*> Validate (Right r) = Validate (Right $ f r)
+
+collectE :: Except e a -> Validate e a
+collectE ex = case runExcept ex of
+  (Left err) -> Validate (Left [err])
+  (Right x) -> Validate (Right x)
+
+tryReadWithIndex :: [String] -> [Except SumError Integer]
+tryReadWithIndex xs = fmap (\(i, s) -> withExcept (SumError i) $ tryRead s) (zip [1..] xs)
+
+validateSum :: [String] -> Validate SumError Integer
+validateSum xs = sum <$> traverse collectE resultsWithSumError
+  where resultsWithSumError = fmap (\(i, s) -> withExcept (SumError i) $ tryRead s) (zip [1..] xs)
+
+strings = ["10", "20"] -- ["10", "20", "", "oops"]
+excepts = fmap tryRead strings :: [Except ReadError Int]
+exceptsWithIdx = zip [1..] excepts
+exceptsWithSumError = fmap (\(i, e) -> withExcept (SumError i) e) exceptsWithIdx
+
+-- GHCi> getValidate $ validateSum ["10", "20", "30"]
+-- Right 60
+-- GHCi> getValidate $ validateSum ["10", "", "30", "oops"]
+-- Left [SumError 2 EmptyInput,SumError 4 (NoParse "oops")]
