@@ -36,4 +36,17 @@ anyE = satisfyE (const True)
 -- Left "unexpected B"
 -- GHCi> runPrsE ((,) <$> anyE <* charE 'B' <*> anyE) "AB"
 -- Left "unexpected end of input"
+
+instance Monad PrsE where
+  parser >>= k = PrsE $ \str -> do
+    (result1, str1) <- runPrsE parser str
+    (result2, str2) <- runPrsE (k result1) str1
+    return (result2, str2)
+
+-- GHCi> runPrsE (do {a <- charE 'A'; b <- charE 'B'; return (a,b)}) "ABC"
+-- Right (('A','B'),"C")
+-- GHCi> runPrsE (do {a <- charE 'A'; b <- charE 'B'; return (a,b)}) "ACD"
+-- Left "unexpected C"
+-- GHCi> runPrsE (do {a <- charE 'A'; b <- charE 'B'; return (a,b)}) "BCD"
+-- Left "unexpected B"
  
